@@ -4,6 +4,7 @@ Dummy ALB implementation using Terraform, Docker, Nginx and Python/FastAPI.
 **Pre-requisites**
 - [Docker](https://docs.docker.com/get-docker/)
 - [Terraform](https://developer.hashicorp.com/terraform/downloads)
+- [jq](https://stedolan.github.io/jq/download/)
 
 ## Usage
 ### Deploy the clusters
