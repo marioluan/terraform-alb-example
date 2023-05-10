@@ -1,0 +1,65 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+fetch_terraform_output() {
+  local output_key="$1"
+  cd terraform || exit
+  response=$(terraform output -json "$output_key")
+  cd ..
+  echo "$response"
+}
+
+start_cluster() {
+  echo "[*] Starting cluster"
+
+  local servers="$1"
+  local alb="$2"
+
+  echo "$servers" | jq '.[]' | xargs docker start
+  echo "$alb" | xargs docker start
+
+  echo "[OK] Cluster started successfully"
+}
+
+stop_cluster() {
+  echo "[*] Stopping cluster"
+
+  local servers="$1"
+  local alb="$2"
+
+  echo "$servers" | jq '.[]' | xargs docker stop
+  echo "$alb" | xargs docker stop
+
+  echo "[OK] Cluster stopped successfully"
+}
+
+get_cluster_status() {
+  echo "[*] Getting cluster status"
+
+  local servers="$1"
+  local alb="$2"
+
+  echo "$servers" | jq '.[]' | xargs docker inspect --format='{{json .Name}}=>{{json .State.Health.Status}}'
+  echo "$alb" | xargs docker inspect --format='{{json .Name}}=>{{json .State.Health.Status}}'
+
+  echo "[OK] Retrieved status successfully"
+}
+
+# TODO: use --flags instead of positional arguments.
+# TODO: validate input.
+target="$1"
+cluster_name="$2"
+
+servers=$(fetch_terraform_output "${cluster_name}_servers")
+alb=$(fetch_terraform_output "${cluster_name}_alb")
+
+if [[ "$target" = "start" ]]; then
+  start_cluster "$servers" "$alb"
+elif [[ "$target" = "stop" ]]; then
+  stop_cluster "$servers" "$alb"
+elif [[ "$target" = "status" ]]; then
+  get_cluster_status "$servers" "$alb"
+fi
